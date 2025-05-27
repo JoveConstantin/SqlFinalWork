@@ -174,12 +174,4 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-
-	/*	err = service.store.DeleteAll()
-		fmt.Println("Удаляем всё)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-	*/
 }

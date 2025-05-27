@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,10 +34,7 @@ func getTestParcel() Parcel {
 func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	defer db.Close() // настройте подключение к БД
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
@@ -52,10 +50,11 @@ func TestAddGetDelete(t *testing.T) {
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 	p, err := store.Get(rows)
 	require.NoError(t, err)
-	require.Equal(t, parcel.Client, p.Client)
-	require.Equal(t, parcel.Address, p.Address)
-	require.Equal(t, parcel.Status, p.Status)
-	require.Equal(t, parcel.CreatedAt, p.CreatedAt)
+	assert.Equal(t, parcel.Client, p.Client)
+	assert.Equal(t, parcel.Address, p.Address)
+	assert.Equal(t, parcel.Status, p.Status)
+	assert.Equal(t, parcel.CreatedAt, p.CreatedAt)
+	assert.NotZero(t, p.Number) //т.к. в БД автоинкремент, номер не будет совпдать, поэтому сделал проверку, есть ли значение
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
@@ -86,11 +85,12 @@ func TestSetAddress(t *testing.T) {
 	// обновите адрес, убедитесь в отсутствии ошибки
 	newAddress := "new test address"
 	err = store.SetAddress(rows, newAddress)
+	require.NoError(t, err)
 	// check
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	p, err := store.Get(rows)
 	require.NoError(t, err)
-	require.Equal(t, p.Address, newAddress)
+	assert.Equal(t, p.Address, newAddress)
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -117,7 +117,8 @@ func TestSetStatus(t *testing.T) {
 	// check
 	// получите добавленную посылку и убедитесь, что статус обновился
 	p, err := store.Get(rows)
-	require.Equal(t, ParcelStatusSent, p.Status)
+	require.NoError(t, err)
+	assert.Equal(t, ParcelStatusSent, p.Status)
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
@@ -161,17 +162,14 @@ func TestGetByClient(t *testing.T) {
 	// убедитесь в отсутствии ошибки
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 	require.NoError(t, err)
-	require.Len(t, storedParcels, len(parcels))
+	assert.Len(t, storedParcels, len(parcels))
 	// check
 	for _, parcel := range storedParcels {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
 		// убедитесь, что значения полей полученных посылок заполнены верно
 		originalParcel, exists := parcelMap[parcel.Number]
-		require.True(t, exists)
-		require.Equal(t, originalParcel.Number, parcel.Number)
-		require.Equal(t, originalParcel.Client, parcel.Client)
-		require.Equal(t, originalParcel.Status, parcel.Status)
-		require.Equal(t, originalParcel.Address, parcel.Address)
+		assert.True(t, exists)
+		assert.Equal(t, originalParcel, parcel)
 	}
 }
